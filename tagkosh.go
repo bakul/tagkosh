@@ -64,6 +64,13 @@ func init() {
 
 }
 
+var state = 0
+type Word struct {
+     cat  string
+}
+
+var words = make(map[string]*Word, 10)
+
 func processfile(file string, dst *bufio.Writer) {
 	data, err := ioutil.ReadFile(file)
 	if err != nil {
@@ -88,6 +95,15 @@ func processfile(file string, dst *bufio.Writer) {
 			continue
 		}
 		w := spaceRE.Split(l, -1)
+		switch state {
+		case 0:
+			if _, ok := words[w[0]]; ok {
+		     	      fmt.Fprintf(os.Stderr, "Duplicate word: %v\n", w[0])
+			}
+			words[w[0]] = &Word{cat:w[1]}
+		case 1:
+		default:
+		}
 		if verbose {
 			fmt.Fprintf(os.Stderr, "%d: %d words\n", i+1, len(w))
 		}
