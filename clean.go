@@ -5,9 +5,7 @@ import (
 	"flag"
 	"fmt"
 	"io/ioutil"
-	"log"
 	"os"
-	//"path"
 	"regexp"
 	"strings"
 )
@@ -22,8 +20,8 @@ const (
 )
 
 var (
-	flagv   = flag.Bool("v", false, "print verbose output")
-	flagf   = flag.String("f", "", "file containing names of files to process")
+	flagd = flag.Bool("d", false, "print debugging output")
+	flagf = flag.Int("f", 0, "field to expand")
 	verbose bool
 
 	spaceRE = regexp.MustCompile("[ \t]+")
@@ -205,6 +203,7 @@ func expand(field string)(words []string) {
 }
 
 func processfile(file string, dst *bufio.Writer) {
+	field := *flagf
 	data, err := ioutil.ReadFile(file)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "%v: %v\n", file, err)
@@ -230,7 +229,7 @@ func processfile(file string, dst *bufio.Writer) {
 		w := semiRE.Split(l, -1)
 		// Format:
 		// 1;;words,....
-		for i, word := range expand(w[2]) {
+		for i, word := range expand(w[field]) {
 			fmt.Printf("%d: ", i);dump(word)
 			fmt.Printf("\n")
 			fmt.Fprintf(dst, "%s;%s\n", word, l)
@@ -254,9 +253,7 @@ func process(src []string, dst string) {
 
 func usage() {
 	fmt.Fprintf(os.Stderr,
-		"Usage: tagkosh [-v] input-file [input-file ...] output\n"+
-			"       tagkosh [-v] input-dir output\n"+
-			"       tagkosh [-v] -f input-list output\n")
+		"Usage: clean [-v -f field] input-file output\n")
 	os.Exit(1)
 }
 
@@ -305,29 +302,15 @@ func readdir(name string) ([]string, error) {
 }
 
 func main() {
-	var err error
 	var dst string
 	var src []string
 	var n int
 
 	flag.Parse()
-	verbose = *flagv
+	verbose = *flagd
 	switch n = flag.NArg(); n {
-	case 0:
+	case 0, 1:
 		usage()
-	case 1:
-		if *flagf == "" {
-			usage()
-		}
-		src, err = readlines(*flagf)
-		if err != nil {
-			log.Panicf("error: %v\n", err)
-		}
-	case 2:
-		src, err = readdir(flag.Arg(0))
-		if err != nil {
-			log.Panicf("error: %v\n", err)
-		}
 	default:
 		src = make([]string, n-1)
 		for i := 0; i < n-1; i++ {
